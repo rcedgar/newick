@@ -1,5 +1,5 @@
 # newick
-Manipulate and draw trees in Newick format.
+Manipulate and draw trees in [Newick format](https://en.wikipedia.org/wiki/Newick_format).
 
 ## Downloads
 
