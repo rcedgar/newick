@@ -1,3 +1,5 @@
+![Newick](http://drive5.com/images/newick_header3.png)
+
 # newick
 Manipulate and draw trees in [Newick format](https://en.wikipedia.org/wiki/Newick_format).
 
