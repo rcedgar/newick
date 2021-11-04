@@ -98,5 +98,7 @@ Windows [newick.exe](https://github.com/rcedgar/newick/raw/main/binaries/newick.
             Space between trees (default 300).
         -trees_per_row n
             Number of trees per row in figure (default 4).
+        -triangles w,h
+            Draw triangles at leaves with width w and height h.
         -legend legend.svg
             Legend showing features (e.g. phylum names) and colors.
