@@ -2094,7 +2094,7 @@ void PrintProgramInfo(FILE *f)
 void GetVersionString(string &s)
 	{
 	const int counter = 
-#include "../ver/counter.h"
+#include "ver_counter.h"
 	;
 	const char *Flags = ""
 
