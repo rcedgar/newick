@@ -66,7 +66,7 @@ uint64 g_FreeTotal;
 #endif
 
 const uint GitVersionCounter = 
-#include "../ver/counter.h"
+#include "ver_counter.h"
 	;
 
 static const double LOG2 = log(2.0);
