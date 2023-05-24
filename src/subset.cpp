@@ -46,7 +46,9 @@ static void Subset(const string &InputFileName, bool UseAccs)
 	T.Subset(LeafNodeIndexes);
 	T.CollapseConfidenceUnary();
 	T.CollapseUnary();
+	Progress("Writing output... ");
 	T.ToNewickFile(opt(output));
+	Progress("done.\n");
 	}
 
 void cmd_subset()

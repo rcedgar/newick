@@ -24,7 +24,7 @@ public:
 
 	double m_CurrentLeafY = 0;
 	double m_MaxRootDist = 0;
-	double m_Margin = 50;
+	double m_Margin = 100;
 	double m_Width = TREE_WIDTH;
 	double m_Height = TREE_HEIGHT;
 	double m_StrokeWidth = 1;
@@ -33,6 +33,8 @@ public:
 
 	double m_TriangleWidth = 0;
 	double m_TriangleHeight = 0;
+	double m_RectangleWidth = 0;
+	double m_RectangleHeight = 0;
 
 	const FeatureTable *m_FT = 0;
 	uint m_ValueCount = 0;
@@ -41,7 +43,7 @@ public:
 	string m_DefaultColor = "gray";
 	string m_LeafLabelColor = "black";
 	vector<string> m_ValueToColor;
-	double m_MajorityFract = 0.8;
+	double m_MajorityFract = 1.0;
 
 	string m_Title = "";
 	double m_TitleFontSize = 10;
@@ -60,6 +62,7 @@ public:
 	void SetColors(const string &DefaultColor,
 	  const vector<string> &ValueToColor);
 	void GetColor(uint Node, string &Color) const;
+	double GetEstimatedMaxLeafLabelPx() const;
 
 private:
 	double SetY(uint Node);

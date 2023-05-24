@@ -45,7 +45,7 @@ public:
 	void LogContext() const;
 	void LogState() const;
 	void GetLabelAndLength(string &Label, double &Length);
-	void GetLength(double &Length);
+	void GetLength(double &Length, string &BS);
 	void PopStack();
 	const string &GetNextToken() const;
 	uint FixFT();

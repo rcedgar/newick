@@ -28,8 +28,35 @@ void Layout::Run(const Tree2 &T)
 	{
 	m_T = &T;
 	asserta(m_T->IsRooted());
+
 	const uint NodeCount = m_T->GetNodeCount();
 	const uint LeafCount = m_T->GetLeafCount();
+
+	if (optset_strokewidth)
+		m_StrokeWidth = opt(strokewidth);
+	if (optset_pixelsperunit)
+		{
+		double TreeHeight = T.GetMaxLeafDist(T.m_Root);
+		m_Width = uint(TreeHeight*opt(pixelsperunit));
+		}
+	else if (optset_tree_width)
+		m_Width = opt(tree_width);
+	if (optset_tree_height)
+		m_Height = opt(tree_height);
+	if (optset_scalex || optset_scaley)
+		{
+		asserta(optset_scalex && optset_scaley);
+		asserta(!optset_tree_width && !optset_tree_height);
+
+		double ScaleX = opt(scalex);
+		double ScaleY = opt(scaley);
+
+		uint LeafCount = T.GetLeafCount();
+		m_Width = LeafCount*ScaleX;
+		m_Height = LeafCount*ScaleY;
+		}
+	m_Margin = min(m_Width, m_Height)/10;
+
 	m_LeafSpacingY = m_Height/LeafCount;
 	m_LabelFontSize = (m_LeafSpacingY*3)/4;
 	if (m_LabelFontSize > 10)
@@ -37,6 +64,19 @@ void Layout::Run(const Tree2 &T)
 	if (optset_label_font_size)
 		m_LabelFontSize = opt(label_font_size);
 
+	m_MajorityFract = 1.0;
+	if (optset_majorityfract)
+		m_MajorityFract = opt(majorityfract);
+	asserta(m_MajorityFract >= 0 && m_MajorityFract <= 1);
+
+	if (optset_squares)
+		{
+		vector<string> Fields;
+		Split(opt(squares), Fields, '+');
+		asserta(SIZE(Fields) == 2);
+		m_RectangleWidth = StrToUint(Fields[0]);
+		m_RectangleHeight = StrToUint(Fields[1]);
+		}
 	if (optset_triangles)
 		{
 		vector<string> Fields;
@@ -67,13 +107,19 @@ void Layout::Run(const Tree2 &T)
 
 	double RootY = SetY(m_T->m_Root);
 
+	const bool UnitLengths = opt(unitlengths);
 	for (uint Node = 0; Node < NodeCount; ++Node)
 		{
-		double Dist = (opt(unitlengths) ?
+		double Dist = (UnitLengths ?
 		  m_T->GetNodeCountToRoot(Node) : m_T->GetRootDist(Node));
 		m_MaxRootDist = max(Dist, m_MaxRootDist);
 		}
-	m_ScaleX = m_Width/m_MaxRootDist;
+
+	double EstimatedMaxLeafLabelPx = GetEstimatedMaxLeafLabelPx();
+	if (EstimatedMaxLeafLabelPx >= m_Width - 20)
+		Die("Increase with, labels overflow");
+
+	m_ScaleX = (m_Width - EstimatedMaxLeafLabelPx)/m_MaxRootDist;
 
 	for (uint Node = 0; Node < NodeCount; ++Node)
 		{
@@ -171,8 +217,23 @@ void Layout::RenderNode(Svg &S, uint Node)
 		asserta(Ry == DBL_MAX);
 		const string &Label = m_T->GetLabel(Node);
 		if (opt(draw_leaf_labels) && Label != "")
-			S.Text(X+5, Y+1, "Arial", m_LabelFontSize,
+			{
+			double dx = (m_RectangleWidth == 0 ? 0 : m_RectangleWidth + 3);
+			double dy = m_LabelFontSize/2 - 1;
+			if (optset_labeldx)
+				{
+				const string &strLabelDx = opt(labeldx);
+				uint ddx = StrToUint(strLabelDx.c_str()+1);
+				if (strLabelDx[0] == '+')
+					dx += ddx;
+				else if (strLabelDx[0] == '-')
+					dx -= ddx;
+				else
+					asserta(false);
+				}
+			S.Text(X+5+dx, Y+dy, "Arial", m_LabelFontSize,
 				"normal", m_LeafLabelColor, "start", Label);
+			}
 		if (m_TriangleWidth > 0)
 			{
 			double WW = m_TriangleWidth;
@@ -180,6 +241,14 @@ void Layout::RenderNode(Svg &S, uint Node)
 			string Color;
 			GetColor(Node, Color);
 			S.Triangle(X-2, Y+1, X+WW, Y-HH, X+WW, Y+HH, 1, Color, Color);
+			}
+		else if (m_RectangleWidth > 0)
+			{
+			double WW = m_RectangleWidth;
+			double HH = m_RectangleHeight;
+			string Color;
+			GetColor(Node, Color);
+			S.Rect(X+HH/4, Y-HH/2, WW, HH, 1, Color, Color);
 			}
 		return;
 		}
@@ -190,29 +259,39 @@ void Layout::RenderNode(Svg &S, uint Node)
 	asserta(Ry != DBL_MAX);
 
 	string Color;
+	string LeftColor;
+	string RightColor;
+
 	uint Left = m_T->GetLeft(Node);
 	uint Right = m_T->GetRight(Node);
 	if (m_TriangleWidth > 0)
+		{
 		Color = m_DefaultColor;
+		LeftColor = m_DefaultColor;
+		RightColor = m_DefaultColor;
+		}
 	else
+		{
 		GetColor(Node, Color);
-	S.Line(X, Ly, Lx, Ly, m_StrokeWidth, Color);		// b
-	S.Line(X, Ry, Rx, Ry, m_StrokeWidth, Color);		// c
-	S.Line(X, Ly, X, Ry, m_StrokeWidth, Color);			// d
+		GetColor(Left, LeftColor);
+		GetColor(Right, RightColor);
+		}
+	S.Line(X, Ly, Lx, Ly, m_StrokeWidth, LeftColor);		// b
+	S.Line(X, Ry, Rx, Ry, m_StrokeWidth, RightColor);		// c
+	S.Line(X, Ly, X, Ry, m_StrokeWidth, Color);				// d
 
 	if (opt(draw_internal_labels))
 		{
 		string Label = m_T->GetLabel(Node);
 		if (Label != "")
 			{
-			if (opt(internal_labels_pct))
+			if (IsValidFloatStr(Label))
 				{
-				if (IsValidFloatStr(Label))
-					{
-					double Fract = StrToFloat(Label);
-					asserta(Fract >= 0 && Fract <= 1);
+				double Fract = StrToFloat(Label);
+				if (Fract >= 0 && Fract <= 1)
 					Ps(Label, "%u", uint(Fract*100));
-					}
+				else if (Fract >= 0 && Fract <= 100)
+					Ps(Label, "%u", uint(Fract));
 				}
 			double LabelX = X + 10;
 			double LabelY = Y + 5;
@@ -220,6 +299,25 @@ void Layout::RenderNode(Svg &S, uint Node)
 				"normal", m_LeafLabelColor, "start", Label);
 			}
 		}
+	}
+
+double Layout::GetEstimatedMaxLeafLabelPx() const
+	{
+	if (!opt(draw_leaf_labels))
+		return 0;
+
+	const vector<string> &Labels = m_T->m_Labels;
+	const uint N = SIZE(Labels);
+	uint MaxLabelLength = 0;
+	for (uint i = 0; i < N; ++i)
+		{
+		const uint L = SIZE(Labels[i]);
+		MaxLabelLength = max(L, MaxLabelLength);
+		}
+
+	const double AVGRATIO = 0.5;
+	double Px = MaxLabelLength*m_LabelFontSize*AVGRATIO;
+	return Px;
 	}
 
 void Layout::Render(Svg &S)

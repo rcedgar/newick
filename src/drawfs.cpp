@@ -6,16 +6,97 @@
 
 void ColorsFromFile(const string &FileName,
   vector<string> &Values, vector<string> &Colors);
-void StringsFromFile(const string &FileName, vector<string> &Strings);
+void TreesFromFile3(const string &FileName, vector<Tree2 *> &Trees);
 void TreesFromFile2(const string &FileName, vector<Tree2 *> &Trees);
+void StringsFromFile(const string &FileName, vector<string> &Strings);
+void SetFeatureTable2(const Tree2 &T2, FeatureTable &FT);
 
-void cmd_drawfs()
+static double HUE = 0.5;
+static double SAT = 0.95;
+static double h = 0;
+static double Hue = 0;
+
+static void hsv_to_rgb(double h, double s, double v,
+  byte &R, byte &G, byte &B)
 	{
-	const string &FileName = opt(drawfs);
+	int h_i = int(h*6);
+	double f = h*6 - h_i;
+	double p = v * (1 - s);
+	double q = v * (1 - f*s);
+	double t = v * (1 - (1 - f) * s);
+	double r = 0;
+	double g = 0;
+	double b = 0;
+	if (h_i == 0)
+		{
+		//r, g, b = v, t, p
+		r = v;
+		v = t;
+		b = p;
+		}
+	else if ( h_i == 1)	
+		{
+		//r, g, b = q, v, p
+		r = q;
+		g = v;
+		b = p;
+		}
+	else if ( h_i == 2)	
+		{
+		//r, g, b = p, v, t
+		r = p;
+		g = v;
+		b = t;
+		}
+	else if ( h_i == 3)	
+		{
+		//r, g, b = p, q, v
+		r = p;
+		g = q;
+		b = v;
+		}
+	else if ( h_i == 4)	
+		{
+		//r, g, b = t, p, v
+		r = t;
+		g = p;
+		b = v;
+		}
+	else if ( h_i == 5)	
+		{
+		//r, g, b = v, p, q
+		r = v;
+		g = p;
+		b = q;
+		}
+	else
+		asserta(false);
+
+	R = byte(r*256);
+	G = byte(g*256);
+	B = byte(b*256);
+	}
+
+void GetRandomColor(string &Color)
+	{
+	h += 0.618033988749895;
+	h = fmod(h, 1.0);
+	if (HUE == 0)
+		{
+		uint r = randu32()%1000;
+		Hue = 0.5 + r/2000.0;
+		}
+	else
+		Hue = HUE;
+	byte R, G, B;
+	hsv_to_rgb(h, Hue, SAT, R, G, B);
+	Ps(Color, "#%02x%02x%02x", R, G, B);
+	}
+
+static void DrawTrees(const vector<Tree2 *> &Tree2s)
+	{
 	asserta(optset_colors);
 
-	vector<Tree2 *> Tree2s;
-	TreesFromFile2(FileName, Tree2s);
 	const uint TreeCount = SIZE(Tree2s);
 	asserta(TreeCount > 0);
 
@@ -31,7 +112,7 @@ void cmd_drawfs()
 	uint TitleFontSize = 10;
 	if (optset_title_font_size)
 		TitleFontSize = opt(title_font_size);
-	string DefaultColor = "gray";
+	string DefaultColor = "lightgray";
 	if (optset_default_color)
 		DefaultColor = opt(default_color);
 
@@ -43,9 +124,6 @@ void cmd_drawfs()
 	if (optset_trees_per_row)
 		TreesPerRow = opt(trees_per_row);
 
-	//vector<string> TreeFileNames;
-	//StringsFromFile(FileName, TreeFileNames);
-	//const uint TreeCount = SIZE(TreeFileNames);
 	const uint RowCount = (TreeCount + TreesPerRow - 1)/TreesPerRow;
 
 	double FigWidth = TreesPerRow*(TreeWidth + TreeSpacing) + 2*TreeSpacing; 
@@ -54,24 +132,30 @@ void cmd_drawfs()
 	double OffsetY = TreeSpacing;
 
 	FeatureTable FT;
-	FT.FromFile(opt(features));
+	if (optset_features)
+		FT.FromFile(opt(features));
 
 	vector<string> Values;
 	vector<string> Colors;
-	ColorsFromFile(opt(colors), Values, Colors);
-
-	uint ValueCount = FT.GetValueCount();
-	vector<string> ValueToColor(ValueCount, "black");
-	const uint n = SIZE(Values);
-	for (uint i = 0; i < n; ++i)
+	if (optset_colors)
+		ColorsFromFile(opt(colors), Values, Colors);
+	else
 		{
-		const string &Value = Values[i];
-		uint ValueIndex = FT.GetValueIndex(Value);
-		if (ValueIndex != UINT_MAX)
+		Values = FT.m_Values;
+		const uint ValueCount = SIZE(Values);
+		for (uint i = 0; i < ValueCount; ++i)
 			{
-			asserta(ValueIndex < ValueCount);
-			ValueToColor[ValueIndex] = Colors[i];
+			string Color;
+			GetRandomColor(Color);
+			Colors.push_back(Color);
 			}
+		}
+
+	vector<string> Titles;
+	if (optset_titles)
+		{
+		StringsFromFile(opt(titles), Titles);
+		asserta(SIZE(Titles) == TreeCount);
 		}
 
 	Svg S;
@@ -118,6 +202,8 @@ void cmd_drawfs()
 
 		if (opt(title16x))
 			Title = Titles16x[TreeIndex];
+		else if (optset_titles)
+			Title = Titles[TreeIndex];
 
 		const uint NodeCount = T.GetNodeCount();
 		if (!opt(unitlengths))
@@ -137,11 +223,25 @@ void cmd_drawfs()
 				}
 			}
 
+		if (!optset_features)
+			SetFeatureTable2(T, FT);
+		uint ValueCount = FT.GetValueCount();
+		vector<string> ValueToColor(ValueCount, "black");
+		const uint n = SIZE(Values);
+		for (uint i = 0; i < n; ++i)
+			{
+			const string &Value = Values[i];
+			uint ValueIndex = FT.GetValueIndex(Value);
+			if (ValueIndex != UINT_MAX)
+				{
+				asserta(ValueIndex < ValueCount);
+				ValueToColor[ValueIndex] = Colors[i];
+				}
+			}
+
 		Layout Lay;
 		Lay.m_OffsetX = OffsetX;
 		Lay.m_OffsetY = OffsetY - 25;
-		Lay.m_Width = TreeWidth;
-		Lay.m_Height = TreeHeight;
 		Lay.Run(T);
 		Lay.SetFeatures(FT);
 		Lay.SetColors(DefaultColor, ValueToColor);
@@ -180,4 +280,26 @@ void cmd_drawfs()
 		}
 
 	S.Close();
+	}
+
+void cmd_drawfs()
+	{
+// FileName is Newick file with one tree per line
+	const string &FileName = opt(drawfs);
+	//asserta(optset_colors);
+
+	vector<Tree2 *> Tree2s;
+	TreesFromFile2(FileName, Tree2s);
+	DrawTrees(Tree2s);
+	}
+
+void cmd_drawfsp()
+	{
+// FileName is text file with one pathname per line
+	const string &FileName = opt(drawfsp);
+	//asserta(optset_colors);
+
+	vector<Tree2 *> Tree2s;
+	TreesFromFile3(FileName, Tree2s);
+	DrawTrees(Tree2s);
 	}

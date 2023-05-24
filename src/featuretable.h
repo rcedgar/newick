@@ -4,6 +4,7 @@
 #include <set>
 
 class TreeN;
+class TreeX;
 
 class FeatureTable
 	{
@@ -40,7 +41,7 @@ public:
 	  vector<string> &Labels,
 	  vector<string> &Values);
 	void FromTree(const TreeN &T, char Sep, uint FieldIndex);
-
+	void FromTree(const TreeX &T, char Sep, uint FieldIndex);
 	uint GetLabelCount() const { return SIZE(m_Labels); }
 	uint GetValueCount() const { return SIZE(m_Values); }
 
@@ -119,6 +120,22 @@ public:
 	uint GetLabelIndex(const string &Label) const;
 	uint GetLabelCount_ByValueIndex(uint ValueIndex) const;
 	void GetLabels_ByValueIndex(uint ValueIndex, vector<string> &Labels) const;
+	void GetLabels_ByValueIndex(uint ValueIndex, set<string> &Labels) const;
 
 	void SetLeafNodeSet(const TreeN &T);
+	void SetLeafNodeSet(const TreeX &T);
+
+public:
+	static void GetValueFromLabel(const string &Label, char Sep,
+	  uint FieldIndex, string &Value)
+		{
+		Value.clear();
+		vector<string> Fields;
+		Split(Label, Fields, Sep);
+		if (SIZE(Fields) <= FieldIndex)
+			return;
+		Value = Fields[FieldIndex];
+		}
 	};
+
+void SetFeatureTable(const TreeX &T, FeatureTable &FT);

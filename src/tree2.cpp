@@ -484,7 +484,7 @@ void Tree2::Inorder(uint Node, fn_OnNode OnNode) const
 		Inorder(Left, OnNode);
 	OnNode(*this, Node);
 	if (Right != UINT_MAX)
-		Inorder(Left, OnNode);
+		Inorder(Right, OnNode);
 	}
 
 void Tree2::Preorder(uint Node, fn_OnNode OnNode) const

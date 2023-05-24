@@ -51,6 +51,60 @@ void TreeN::LogMe() const
 		}
 	}
 
+void TreeN::FromSubtree(const TreeN &T, uint Node)
+	{
+	Clear();
+
+	vector<uint> Nodes;
+	T.AppendSubtreeNodes(Node, Nodes);
+
+	bool Found = false;
+	for (uint i = 0; i < SIZE(Nodes); ++i)
+		{
+		uint Node2 = Nodes[i];
+		if (Node2 == Node)
+			{
+			asserta(!Found);
+			Found = true;
+			m_NodeToParent[Node] = UINT_MAX;
+			m_NodeToLength[Node] = DBL_MAX;
+			m_NodeToLabel[Node] = "Root";
+			continue;
+			}
+
+		uint Parent = T.GetParent(Node2);
+		const string &Label = T.GetLabel(Node2);
+		double Length = T.GetLength(Node2);
+
+		asserta(m_NodeToParent.find(Node2) == m_NodeToParent.end());
+		m_NodeToParent[Node2] = Parent;
+		m_NodeToLength[Node2] = Length;
+		m_NodeToLabel[Node2] = Label;
+		}
+	asserta(Found);
+
+	SetDerived();
+	Validate();
+	}
+
+// Create tree with exactly one node
+void TreeN::CreateSingleton()
+	{
+	Clear();
+
+	m_NodeToLabel[0] = "Root";
+	m_NodeToParent[0] = UINT_MAX;
+	m_NodeToLength[0] = DBL_MAX;
+	m_LabelToNode["Root"] = 0;
+
+	vector<uint> Empty;
+	m_NodeToChildren[0] = Empty;
+
+	m_Root = 0;
+
+	Validate();
+	}
+
 void TreeN::CopyNormalized(TreeN &T) const
 	{
 	T.m_NodeToParent = m_NodeToParent;
@@ -330,6 +384,8 @@ bool TreeN::IsValidNewickLabel(const string &Label)
 void TreeN::GetNewickLabel(uint Node, string &Label) const
 	{
 	Label = GetLabel(Node);
+	if (!opt(allow_blank_labels) && Label.empty() && IsLeaf(Node))
+		Label = "_";
 	bool Ok = IsValidNewickLabel(Label);
 	if (!Ok)
 		Label = "'" + Label + "'";
@@ -339,7 +395,15 @@ const string &TreeN::GetLabel(uint Node) const
 	{
 	map<uint, string>::const_iterator p = m_NodeToLabel.find(Node);
 	asserta(p != m_NodeToLabel.end());
-	return p->second;
+	const string &Label = p->second;
+	return Label;
+	}
+
+void TreeN::FromNewickStr(const string &NewickStr)
+	{
+	Tree2 T2;
+	T2.FromStr(NewickStr);
+	FromTree2(T2);
 	}
 
 void TreeN::FromNewickTree(const NewickTree &NP)
@@ -373,7 +437,9 @@ void TreeN::FromTree2(const Tree2 &T)
 	for (uint Node = 0; Node < NodeCount; ++Node)
 		{
 		uint Parent = T.GetParent(Node);
-		double Length = T.GetEdgeLength(Node, Parent);
+		double Length = DBL_MAX;
+		if (T.IsEdge(Node, Parent))
+			Length = T.GetEdgeLength(Node, Parent);
 		const string &Label = T.GetLabel(Node);
 
 		m_NodeToParent[Node] = Parent;
@@ -427,6 +493,18 @@ void TreeN::AppendSubtreeLeafNodes(uint Node, set<uint> &LeafNodes) const
 		}
 	}
 
+void TreeN::GetSubtreeLeafCounts(vector<uint> &Counts) const
+	{
+	Counts.clear();
+	vector<uint> Nodes;
+	for (uint k = 0; k < SIZE(Nodes); ++k)
+		{
+		uint Node = Nodes[k];
+		uint n = GetSubtreeLeafCount(Node);
+		Counts.push_back(n);
+		}
+	}
+
 uint TreeN::GetSubtreeLeafCount(uint Node) const
 	{
 	vector<uint> LeafNodes;
@@ -449,6 +527,22 @@ void TreeN::AppendSubtreeLeafNodes(uint Node, vector<uint> &LeafNodes) const
 		{
 		uint Child = Children[i];
 		AppendSubtreeLeafNodes(Child, LeafNodes);
+		}
+	}
+
+void TreeN::AppendSubtreeNodes(uint Node, vector<uint> &Nodes) const
+	{
+	Nodes.push_back(Node);
+	if (IsLeaf(Node))
+		return;
+
+	const vector<uint> &Children = GetChildren(Node);
+	const uint ChildCount = SIZE(Children);
+	asserta(ChildCount > 0);
+	for (uint i = 0; i < ChildCount; ++i)
+		{
+		uint Child = Children[i];
+		AppendSubtreeNodes(Child, Nodes);
 		}
 	}
 
@@ -494,7 +588,13 @@ void TreeN::SetDerived()
 		else
 			{
 			map<uint, vector<uint> >::const_iterator p = m_NodeToChildren.find(Parent);
-			asserta(p != m_NodeToChildren.end());
+			if (p == m_NodeToChildren.end())
+				{
+				Log("\n");
+				Log("Node=%u, NodeToChildren.find(Parent=%u) = end\n", Node, Parent);
+				LogMe();
+				Die("SetDerived failed");
+				}
 			m_NodeToChildren[Parent].push_back(Node);
 			}
 		}
@@ -507,7 +607,7 @@ void TreeN::SetDerived()
 
 	// Do not check for dupes, leaves get duplicated boostrap
 	// labels when collapsing.
-		if (!Label.empty() && IsLeaf(Node))
+		if (!Label.empty())
 			m_LabelToNode[Label] = Node;
 		}
 	}
@@ -558,15 +658,37 @@ double TreeN::SumLengths(double Length1, double Length2)
 // Node's children become parent's children.
 // Special case: if root, delete root, child becomes
 // new root.
-void TreeN::CollapseNode(uint Node)
+void TreeN::CollapseNode(uint Node, bool DoSD)
 	{
+#if DEBUG
+	Validate();
+#endif
 	if (Node == m_Root)
 		{
 		const vector<uint> &Children = GetChildren(Node);
 		const uint ChildCount = SIZE(Children);
 		asserta(ChildCount == 1);
 		uint NewRoot = Children[0];
-		EraseNode(m_Root);
+//		EraseNode(m_Root);
+
+		const string &Label = GetLabel(Node);
+		if (Label != "")
+			m_LabelToNode.erase(Label);
+
+		size_t n = m_NodeToParent.erase(Node);
+		assert(n == 1);
+
+		n = m_NodeToLabel.erase(Node);
+		assert(n == 1);
+
+		n = m_NodeToLength.erase(Node);
+		assert(n == 1);
+
+		n = m_NodeToChildren.erase(Node);
+		assert(n == 1);
+
+		m_NodeToParent[NewRoot] = UINT_MAX;
+
 		m_Root = NewRoot;
 		return;
 		}
@@ -600,13 +722,57 @@ void TreeN::CollapseNode(uint Node)
 			NewParentChildren.push_back(Child);
 		}
 	asserta(Found);
+	asserta(m_NodeToChildren.find(Parent) != m_NodeToChildren.end());
 	m_NodeToChildren[Parent] = NewParentChildren;
 
-	EraseNode(Node);
-//	SetDerived();
+//	EraseNode(Node);
+	size_t n = m_NodeToParent.erase(Node);
+	assert(n == 1);
+
+	n = m_NodeToLabel.erase(Node);
+	assert(n == 1);
+
+	n = m_NodeToLength.erase(Node);
+	assert(n == 1);
+
+	n = m_NodeToChildren.erase(Node);
+	assert(n == 1);
+
+	if (DoSD)
+		SetDerived();
+
 #if DEBUG
 	Validate();
 #endif
+	}
+
+void TreeN::GetLeafLabelSet(set<string> &Labels,
+  bool ErrorIfEmpty, bool ErrorIfDupe) const
+	{
+	Labels.clear();
+	for (map<uint, vector<uint> >::const_iterator p = m_NodeToChildren.begin();
+	  p != m_NodeToChildren.end(); ++p)
+		{
+		const vector<uint> &Children = p->second;
+		if (SIZE(Children) == 0)
+			{
+			uint Node = p->first;
+			map<uint, string>::const_iterator q = m_NodeToLabel.find(Node);
+			asserta(q != m_NodeToLabel.end());
+			const string &Label = q->second;
+			if (Label.empty())
+				{
+				if (ErrorIfEmpty)
+					Die("Empty leaf label");
+				}
+			else
+				{
+				if (ErrorIfDupe && Labels.find(Label) != Labels.end())
+					Die("Duplicate label >%s", Label.c_str());
+				Labels.insert(Label);
+				}
+			}
+		}
 	}
 
 void TreeN::GetLeafLabels(vector<string> &Labels, bool ErrorIfEmpty) const
@@ -631,6 +797,66 @@ void TreeN::GetLeafLabels(vector<string> &Labels, bool ErrorIfEmpty) const
 				Labels.push_back(Label);
 			}
 		}
+	}
+
+/***
+Insert new root above current root.
+New root becomes unary node, if tree was binary
+this update causes it to be non-binary.
+***/
+uint TreeN::InsertNewRootAboveRoot(const string &Label, double Length)
+	{
+	uint OldRoot = m_Root;
+	uint NewRoot = GetNodeCount();
+	m_LabelToNode[Label] = NewRoot;
+	m_NodeToLabel[NewRoot] = Label;
+	m_NodeToParent[NewRoot] = UINT_MAX;
+	m_NodeToLength[NewRoot] = Length;
+	vector<uint> Children;
+	Children.push_back(OldRoot);
+	m_NodeToChildren[NewRoot] = Children;
+	m_NodeToParent[m_Root] = NewRoot;
+	m_Root = NewRoot;
+
+#if DEBUG
+	Validate();
+#endif
+	return NewRoot;
+	}
+
+uint TreeN::InsertNode(uint ParentNode, const string &Label, double Length)
+	{
+	asserta(ParentNode != UINT_MAX);
+	uint NewNode = GetNodeCount();
+	m_LabelToNode[Label] = NewNode;
+	m_NodeToLabel[NewNode] = Label;
+	m_NodeToParent[NewNode] = ParentNode;
+	m_NodeToLength[NewNode] = Length;
+	vector<uint> Empty;
+	m_NodeToChildren[NewNode] = Empty;
+	map<uint, vector<uint> >::iterator p = m_NodeToChildren.find(ParentNode);
+	asserta(p != m_NodeToChildren.end());
+	vector<uint> &Children = p->second;
+	Children.push_back(NewNode);
+#if DEBUG
+	Validate();
+#endif
+	return NewNode;
+	}
+
+uint TreeN::GetSibling(uint Node) const
+	{
+	uint Parent = GetParent(Node);
+	if (Parent == UINT_MAX)
+		return UINT_MAX;
+	uint Left = GetLeft(Parent);
+	uint Right = GetRight(Parent);
+	if (Node == Left)
+		return Right;
+	else if (Node == Right)
+		return Left;
+	asserta(false);
+	return UINT_MAX;
 	}
 
 uint TreeN::GetLeafCount() const
@@ -668,6 +894,54 @@ bool TreeN::IsBinary(bool &Rooted) const
 			return false;
 		}
 	return true;
+	}
+
+void TreeN::GetBootstraps(vector<double> &Bootstraps) const
+	{
+	Bootstraps.clear();
+	const uint NodeCount = GetNodeCount();
+	vector<uint> Nodes;
+	GetNodes(Nodes);
+	uint LE1Count = 0;
+	uint GT1Count = 0;
+	for (uint k = 0; k < NodeCount; ++k)
+		{
+		uint Node = Nodes[k];
+		const string &Label = GetLabel(Node);
+		if (IsLeaf(Node))
+			Bootstraps.push_back(DBL_MAX);
+		else
+			{
+			bool IsFloat = IsValidFloatStr(Label);
+			if (IsFloat)
+				{
+				double b = StrToFloat(Label);
+				asserta(b >= 0 && b <= 100);
+				Bootstraps.push_back(b);
+				if (b <= 1)
+					++LE1Count;
+				else
+					++GT1Count;
+				}
+			else
+				{
+				Bootstraps.push_back(100);
+				++GT1Count;
+				}
+			}
+		}
+	if (GT1Count == 0 && LE1Count > 0)
+		{
+		for (uint k = 0; k < NodeCount; ++k)
+			{
+			double b = Bootstraps[k];
+			if (b != DBL_MAX)
+				{
+				asserta(b >= 0 && b <= 1);
+				Bootstraps[k] = b*100;
+				}
+			}
+		}
 	}
 
 void TreeN::CollapseConfidenceUnary()
@@ -714,6 +988,29 @@ void TreeN::CollapseConfidenceUnary()
 		}
 	}
 
+void TreeN::FixEmptyLeafLabels()
+	{
+	vector<uint> Nodes;
+	GetNodes(Nodes);
+	const uint NodeCount = SIZE(Nodes);
+	uint N = 0;
+	for (uint k = 0; k < NodeCount; ++k)
+		{
+		uint Node = Nodes[k];
+		if (IsLeaf(Node))
+			{
+			const string &Label = GetLabel(Node);
+			if (Label == "")
+				{
+				++N;
+				string NewLabel;
+				Ps(NewLabel, "_empty_%u", N);
+				m_NodeToLabel[Node] = NewLabel;
+				}
+			}
+		}
+	}
+
 void TreeN::CollapseUnary()
 	{
 	for (;;)
@@ -741,8 +1038,6 @@ void TreeN::CollapseUnary()
 
 void TreeN::EraseNode(uint Node)
 	{
-	asserta(Node != m_Root);
-
 	const string &Label = GetLabel(Node);
 	if (Label != "")
 		m_LabelToNode.erase(Label);
@@ -758,6 +1053,35 @@ void TreeN::EraseNode(uint Node)
 
 	n = m_NodeToChildren.erase(Node);
 	assert(n == 1);
+
+	if (Node == m_Root)
+		{
+		m_NodeToParent[Node] = UINT_MAX;
+		m_Root = UINT_MAX;
+		}
+	}
+
+void TreeN::DeleteSubtree(uint Node)
+	{
+	vector<uint> Nodes;
+	AppendSubtreeNodes(Node, Nodes);
+	for (uint i = 0; i < SIZE(Nodes); ++i)
+		EraseNode(Nodes[i]);
+	SetDerived();
+#if DEBUG
+	Validate();
+#endif
+	}
+
+void TreeN::DeleteNode(uint Node, bool DoSD)
+	{
+	vector<uint> SubtreeNodes;
+	GetSubtreeNodes(Node, SubtreeNodes);
+	for (uint i = 0; i < SIZE(SubtreeNodes); ++i)
+		EraseNode(SubtreeNodes[i]);
+	EraseNode(Node);
+	if (DoSD)
+		SetDerived();
 	}
 
 void TreeN::DeleteLeaf(uint Node)
@@ -932,6 +1256,31 @@ void TreeN::ToTSV(FILE *f) const
 		}
 	}
 
+void TreeN::ForceBinaryRoot()
+	{
+	const vector<uint> &Children = GetChildren(m_Root);
+	const uint ChildCount = SIZE(Children);
+	if (ChildCount == 2)
+		return;
+	asserta(ChildCount == 3);
+
+	uint Child0 = Children[0];
+	uint Child1 = Children[1];
+	uint Child2 = Children[2];
+
+	uint NewNode = GetNewNode();
+	m_NodeToParent[NewNode] = m_Root;
+	m_NodeToLabel[NewNode] = "";
+	m_NodeToLength[NewNode] = 0;
+	m_NodeToParent[Child0] = NewNode;
+	m_NodeToParent[Child1] = NewNode;
+	m_NodeToParent[Child2] = m_Root;
+	Normalize();
+	SetDerived();
+	asserta(GetChildCount(m_Root) == 2);
+	Validate();
+	}
+
 // Re-root on existing node.
 // Do not insert new node for new root, 
 // or fix up old root.
@@ -1039,6 +1388,19 @@ void TreeN::Ladderize(bool MoreRight)
 		}
 	}
 
+void TreeN::Subset(const set<string> &Labels)
+	{
+	set<uint> Nodes;
+	for (set<string>::const_iterator p = Labels.begin();
+	  p != Labels.end(); ++p)
+		{
+		const string &Label = *p;
+		uint Node = GetNodeByLabel(Label, true);
+		Nodes.insert(Node);
+		}
+	Subset(Nodes);
+	}
+
 void TreeN::Subset(const set<uint> &SubsetNodes)
 	{
 	map<uint, uint> NodeToCount;
@@ -1085,7 +1447,7 @@ void TreeN::Subset(const set<uint> &SubsetNodes)
 			continue;
 		set<uint>::const_iterator q = KeepNodes.find(Node);
 		if (q == KeepNodes.end())
-			CollapseNode(Node);
+			CollapseNode(Node, false);
 		}
 	SetDerived();
 	Validate();
@@ -1174,6 +1536,23 @@ void TreeN::InsertRootAbove(uint InsertNode, const string &OldRootLabel,
 	uint n = GetChildCount(OldRootNode);
 	if (n == 1)
 		CollapseNode(OldRootNode);
+	}
+
+void TreeN::GetSubtreeNodes(uint Node, vector<uint> &Nodes) const
+	{
+	Nodes.clear();
+	const vector<uint> &Children = GetChildren(Node);
+	for (uint i = 0; i < SIZE(Children); ++i)
+		{
+		uint ChildNode = Children[i];
+		AppendSubtreeNodes(ChildNode, Nodes);
+		}
+	}
+
+void TreeN::GetSubtreeLeafNodes(uint Node, vector<uint> &LeafNodes) const
+	{
+	LeafNodes.clear();
+	AppendSubtreeLeafNodes(Node, LeafNodes);
 	}
 
 void TreeN::GetSubtreeSortedLeafLabels(uint Node, vector<string> &Labels) const
@@ -1266,7 +1645,7 @@ double TreeN::GetRootDist(uint Node) const
 	return Dist;
 	}
 
-static void Test1(NewickParser2 &NP, TreeN &TN, const string &NewickStr)
+static void Test2(NewickParser2 &NP, TreeN &TN, const string &NewickStr)
 	{
 	ProgressLog("\n");
 	ProgressLog("_______________________________________________________\n");
@@ -1291,12 +1670,108 @@ static void Test1(NewickParser2 &NP, TreeN &TN, const string &NewickStr)
 	ProgressLog("  validate after delete ok.\n");
 	}
 
+static void Test1(NewickParser2 &NP, TreeN &TN, const string &NewickStr)
+	{
+	ProgressLog("\n");
+	ProgressLog("_______________________________________________________\n");
+	ProgressLog("  %s\n", NewickStr.c_str());
+
+	NP.FromStr(NewickStr);
+	TN.FromNewickTree(NP);
+	Log(" === Before delete 'A'\n");
+	TN.LogMe();
+	TN.Validate();
+	ProgressLog("  validate ok.\n");
+
+	string s;
+	TN.ToNewickStr(s, false);
+	Log("      InStr = %s\n", NewickStr.c_str());
+	Log("ToNewickStr = %s\n", s.c_str());
+
+	uint NodeA = TN.GetNodeByLabel("A", true);
+	TN.DeleteNode(NodeA);
+	TN.Validate();
+	Log(" === After delete 'A'\n");
+	TN.LogMe();
+
+	ProgressLog("  validate after delete ok.\n");
+	}
+
+static void TestDelete1()
+	{
+	void GenerateRandomTree(const vector<string> &LeafLabels, bool Rooted, 
+	  double MinLength, double MaxLength, Tree2 &T);
+
+	uint LeafCount = 4;
+	vector<string> LeafLabels;
+	string Label = "A";
+	for (uint i = 0; i < 8; ++i)
+		{
+		LeafLabels.push_back(Label);
+		Label[0] += 1;
+		}
+
+	Tree2 T2;
+	GenerateRandomTree(LeafLabels, true, 3.21, 3.21, T2);
+
+	string NewickStr;
+	T2.ToNewickStr(NewickStr);
+	T2.FromCStr(NewickStr.c_str());
+	Log("Newick=%s\n", NewickStr.c_str());
+
+	TreeN T;
+	T.FromTree2(T2);
+
+	const uint NodeCount = T.GetNodeCount();
+	for (uint k = 0; k < 100; ++k)
+		{
+		uint Node = randu32()%NodeCount;
+		if (T.IsRoot(Node))
+			continue;
+		uint Parent = T.GetParent(Node);
+		if (T.IsRoot(Parent))
+			continue;
+		Log("Delete %u\n", Node);
+		T.DeleteNode(Node);
+		Log("Delete %u OK\n", Node);
+		break;
+		}
+	}
+
+static void TestDelete(const string &NewickStr, uint Node)
+	{
+	Log("Delete %u NewickStr=%s\n", Node, NewickStr.c_str());
+	Tree2 T2;
+	T2.FromCStr(NewickStr.c_str());
+
+	TreeN T;
+	T.FromTree2(T2);
+	T.LogMe();
+	T.DeleteNode(Node);
+	//T.ToNewickFile("testdel.newick");
+	}
+
 void cmd_test()
 	{
 	opt(test);
+
+	if (1)
+		{
+		uint Del = 3;
+		TestDelete(
+"(D:3.21,((V:3.21,(A:3.21,(M:3.21,G:3.21):3.21):3.21):3.21,(B:3.21,(K:3.21,P:3.21):3.21):3.21):3.21);",
+		  Del);
+		return;
+		}
+
+	for (uint Iter = 0; Iter < 100; ++Iter)
+		TestDelete1();
+	return;
+
 	NewickParser2 NP;
 	TreeN TN;
 
+	Test1(NP, TN, "((a,(J,K))A,(C,D));");
 	Test1(NP, TN, "(A:0.1,B:0.2,C:0.3);");
 	Test1(NP, TN, "(A,B,(C,D));");
 	Test1(NP, TN, "(A,B,C);");

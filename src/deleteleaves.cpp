@@ -6,6 +6,7 @@ void StringsFromFile(const string &FileName, vector<string> &Strings);
 
 void cmd_deleteleaves()
 	{
+	Die("doesn't work internal nodes become leaves");
 	const string &InputFileName = opt(deleteleaves);
 
 	vector<string> Labels;
@@ -39,7 +40,7 @@ void cmd_deleteleaves()
 			  : T.GetNodeByLabel(Label, false));
 			if (Node == UINT_MAX)
 				{
-//				Warning("Label not found >%s", Label.c_str());
+				//Log("Tree %u, not found >%s\n", TreeIndex, Label.c_str());
 				continue;
 				}
 			if (!T.IsLeaf(Node))
@@ -51,19 +52,8 @@ void cmd_deleteleaves()
 			}
 
 		T.CollapseUnary();
+		T.FixEmptyLeafLabels();
 		T.SetDerived();
-		//uint ChildCountRoot = T.GetChildCount(T.m_Root);
-		//if (ChildCountRoot == 1)
-		//	{
-		//	uint OldRoot = T.m_Root;
-		//	uint NewRoot = T.GetChild(OldRoot, 0);
-		//	//string OldRootLabel = T.GetLabel(OldRoot);
-		//	T.m_Root = NewRoot;
-		//	//T.UpdateLabel(NewRoot, OldRootLabel);
-		//	T.EraseNode(OldRoot);
-		//	T.m_NodeToParent[NewRoot] = UINT_MAX;
-		//	T.SetDerived();
-		//	}
 		T.ToNewickFile(fOut, false);
 		}
 	CloseStdioFile(fOut);

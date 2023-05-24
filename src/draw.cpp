@@ -26,10 +26,6 @@ void cmd_draw()
 	Layout Lay;
 	Lay.m_OffsetX = OffsetX;
 	Lay.m_OffsetY = OffsetY;
-	if (optset_tree_width)
-		Lay.m_Width = opt(tree_width);
-	if (optset_tree_height)
-		Lay.m_Height = opt(tree_height);
 	Lay.Run(T);
 	Lay.Render(opt(svg));
 	}

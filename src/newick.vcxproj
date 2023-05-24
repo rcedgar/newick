@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -20,12 +20,17 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="biffer.h" />
-    <ClInclude Include="biffer2.h" />
     <ClInclude Include="biparter.h" />
+    <ClInclude Include="biparterx.h" />
     <ClInclude Include="clustermaker.h" />
     <ClInclude Include="cmds.h" />
+    <ClInclude Include="consmaker.h" />
+    <ClInclude Include="consmakerx.h" />
+    <ClInclude Include="consorder.h" />
     <ClInclude Include="countsort.h" />
+    <ClInclude Include="divconker.h" />
     <ClInclude Include="featuretable.h" />
+    <ClInclude Include="gobuff.h" />
     <ClInclude Include="layout.h" />
     <ClInclude Include="murmur.h" />
     <ClInclude Include="myopts.h" />
@@ -35,22 +40,42 @@
     <ClInclude Include="newicktree.h" />
     <ClInclude Include="newick_token.h" />
     <ClInclude Include="quarts.h" />
-    <ClInclude Include="rofo.h" />
-    <ClInclude Include="rofo2.h" />
     <ClInclude Include="sort.h" />
     <ClInclude Include="splitter.h" />
+    <ClInclude Include="supermaker.h" />
     <ClInclude Include="svg.h" />
+    <ClInclude Include="taxer.h" />
     <ClInclude Include="tree.h" />
     <ClInclude Include="tree2.h" />
     <ClInclude Include="treen.h" />
+    <ClInclude Include="treex.h" />
     <ClInclude Include="usage.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="addrootlabel.cpp" />
+    <ClCompile Include="bestfitsubtree.cpp" />
+    <ClCompile Include="biparterx.cpp" />
     <ClCompile Include="cladeq.cpp" />
+    <ClCompile Include="colors.cpp" />
+    <ClCompile Include="condensex.cpp" />
     <ClCompile Include="conf2.cpp" />
     <ClCompile Include="confcmps.cpp" />
+    <ClCompile Include="consensus.cpp" />
+    <ClCompile Include="consensusx.cpp" />
+    <ClCompile Include="consmaker.cpp" />
+    <ClCompile Include="consmakerx.cpp" />
+    <ClCompile Include="consorder.cpp" />
     <ClCompile Include="correl2.cpp" />
+    <ClCompile Include="deletegroup.cpp" />
+    <ClCompile Include="deleteoutgroup.cpp" />
+    <ClCompile Include="divconker.cpp" />
+    <ClCompile Include="olcs.cpp" />
+    <ClCompile Include="dq.cpp" />
+    <ClCompile Include="featuretablefromtree.cpp" />
+    <ClCompile Include="findgroups.cpp" />
+    <ClCompile Include="getcc.cpp" />
     <ClCompile Include="getlcas.cpp" />
+    <ClCompile Include="getlcasx.cpp" />
     <ClCompile Include="lcalabel.cpp" />
     <ClCompile Include="mono.cpp" />
     <ClCompile Include="rootbyoutgroup.cpp" />
@@ -90,9 +115,18 @@
     <ClCompile Include="rofo3.cpp" />
     <ClCompile Include="rofos.cpp" />
     <ClCompile Include="rootbyhalves.cpp" />
+    <ClCompile Include="rootbyoutgroupx.cpp" />
     <ClCompile Include="rotate.cpp" />
+    <ClCompile Include="shrink.cpp" />
+    <ClCompile Include="supercluster.cpp" />
+    <ClCompile Include="supermaker.cpp" />
+    <ClCompile Include="tax.cpp" />
+    <ClCompile Include="taxer.cpp" />
     <ClCompile Include="taxq2.cpp" />
+    <ClCompile Include="taxqx.cpp" />
     <ClCompile Include="taxtable.cpp" />
+    <ClCompile Include="testdeletesubtree.cpp" />
+    <ClCompile Include="testx.cpp" />
     <ClCompile Include="topo.cpp" />
     <ClCompile Include="split.cpp" />
     <ClCompile Include="stringsfromfile.cpp" />
@@ -107,6 +141,7 @@
     <ClCompile Include="tree2.cpp" />
     <ClCompile Include="treen.cpp" />
     <ClCompile Include="treesfromdata.cpp" />
+    <ClCompile Include="treex.cpp" />
     <ClCompile Include="tsv.cpp" />
     <ClCompile Include="usage.cpp" />
   </ItemGroup>
@@ -122,27 +157,27 @@
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">

@@ -1,6 +1,45 @@
 #include "myutils.h"
 #include "newickparser2.h"
 
+static void StripBootstrapFromLength(string &Token, string &BS)
+	{
+	BS.clear();
+	const uint L = SIZE(Token);
+	uint i = 0;
+	char c = 0;
+	uint NewLength = L;
+	while (i < L)
+		{
+		c = Token[i++];
+		if (isdigit(c) || c == '.')
+			continue;
+		if (c == '[')
+			{
+			NewLength = i - 1;
+			break;
+			}
+		}
+	if (NewLength == L)
+		return;
+
+	while (i < L)
+		{
+		c = Token[i++];
+		if (isdigit(c))
+			{
+			BS += c;
+			continue;
+			}
+		}
+	if (c == ']' && i == L)
+		{
+		string NewToken;
+		for (uint j = 0; j < NewLength; ++j)
+			NewToken += Token[j];
+		Token = NewToken;
+		}
+	}
+
 void NewickParser2::LogTokens() const
 	{
 	const uint N = SIZE(m_Tokens);
@@ -101,7 +140,7 @@ const string &NewickParser2::GetNextToken() const
 	return m_Tokens[m_TokenIndex+1];
 	}
 
-void NewickParser2::GetLength(double &Length)
+void NewickParser2::GetLength(double &Length, string &BS)
 	{
 	Length = MISSING_LENGTH;
 	const string &PendingToken = GetNextToken();
@@ -115,17 +154,23 @@ void NewickParser2::GetLength(double &Length)
 		Die("Newick ends with ':'");
 		}
 
-	const string &PendingToken2 = GetNextToken();
+	string PendingToken2 = GetNextToken();
+
+// Special case for Wolf2018 S3 which appears to have bootstrap
+// values embedded in the lengths e.g. "0.52108916848037600822[99]"
+// Same with Tara
+	StripBootstrapFromLength(PendingToken2, BS);
 	if (!IsValidFloatStr(PendingToken2))
 		{
 		LogState();
-		Die("Expected length after ':', got '%s'", PendingToken2);
+		Die("Expected length after ':', got '%s'", PendingToken2.c_str());
 		}
 	Length = StrToFloat(PendingToken2);
 	++m_TokenIndex;
 	}
 
-void NewickParser2::GetLabelAndLength(string &Label, double &Length)
+void NewickParser2::GetLabelAndLength(string &Label,
+  double &Length)
 	{
 	Label.clear();
 	Length = MISSING_LENGTH;
@@ -135,7 +180,10 @@ void NewickParser2::GetLabelAndLength(string &Label, double &Length)
 	const string &PendingToken = GetNextToken();
 	if (PendingToken == ":")
 		{
-		GetLength(Length);
+		string BS;
+		GetLength(Length, BS);
+		if (Label == "" && BS != "")
+			Label = BS;
 		return;
 		}
 
@@ -143,7 +191,10 @@ void NewickParser2::GetLabelAndLength(string &Label, double &Length)
 		return;
 	Label = PendingToken;
 	++m_TokenIndex;
-	GetLength(Length);
+	string BS;
+	GetLength(Length, BS);
+	if (Label == "" && BS != "")
+		Label = BS;
 	}
 
 void NewickParser2::PopStack()
@@ -261,7 +312,8 @@ void NewickParser2::FromTokens(const vector<string> &Tokens)
 		// New child node
 			const string &Label = Token;
 			uint Child = SIZE(m_Labels);
-			GetLength(Length);
+			string BS;
+			GetLength(Length, BS);
 			uint Parent = (Depth == 0 ? UINT_MAX : m_Stack[Depth-1]);
 
 			m_Parents.push_back(Parent);

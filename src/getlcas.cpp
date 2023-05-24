@@ -45,7 +45,8 @@ void GetLCAs(const TreeN &T, const FeatureTable &FT, bool AllowInvert,
 			asserta(SIZE(FT.m_LeafNodeSet) > SIZE(GroupLeafNodes));
 			LCA = T.GetBestFitSubtree2(FT.m_LeafNodeSet, GroupLeafNodes,
 			  AllowInvert, FP, FN, Invert);
-			asserta(LCA != UINT_MAX);
+			if (LCA == UINT_MAX)
+				Warning("No LCA for %s", Value.c_str());
 			}
 
 		double MonoF = 1.0 - double(FP + FN)/(GroupSize + FP);

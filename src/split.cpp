@@ -2,6 +2,12 @@
 #include "splitter.h"
 #include "sort.h"
 
+/***
+Attempts to split tree into SplitCount subtrees of
+approximately equal size. 
+Greedily selects the largest remaining subtree.
+***/
+
 void Splitter::Run(const Tree2 &T, uint SplitCount)
 	{
 	m_T = &T;

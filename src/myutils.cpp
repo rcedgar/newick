@@ -65,9 +65,7 @@ uint64 g_AllocTotal;
 uint64 g_FreeTotal;
 #endif
 
-const uint GitVersionCounter = 
-#include "ver_counter.h"
-	;
+const uint GitVersionCounter = 0;
 
 static const double LOG2 = log(2.0);
 static const double LOG10 = log(10.0);
@@ -2093,9 +2091,7 @@ void PrintProgramInfo(FILE *f)
 
 void GetVersionString(string &s)
 	{
-	const int counter = 
-#include "ver_counter.h"
-	;
+	const int counter = 0;
 	const char *Flags = ""
 
 #if	DEBUG

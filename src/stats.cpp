@@ -111,6 +111,44 @@ void cmd_stats()
 		const TreeN &T = *Trees[TreeIndex];
 		Stats(stdout, T);
 		Stats(f, T);
+		if (opt(log_tree))
+			{
+			Log("\n");
+			if (TreeCount > 0)
+				Log("Tree[%u]\n", TreeIndex);
+			T.LogMe();
+			}
+		}
+	CloseStdioFile(f);
+	}
+
+void cmd_rootdists()
+	{
+	const string &FileName = opt(rootdists);
+	vector<TreeN *> Trees;
+	TreesFromFile(FileName, Trees);
+	const uint TreeCount = SIZE(Trees);
+
+	FILE *f = CreateStdioFile(opt(output));
+	for (uint TreeIndex = 0; TreeIndex < TreeCount; ++TreeIndex)
+		{
+		const TreeN &T = *Trees[TreeIndex];
+		const uint Root = T.m_Root;
+		asserta(Root != UINT_MAX);
+
+		vector<uint> Nodes;
+		T.GetNodes(Nodes);
+		const uint NodeCount = SIZE(Nodes);
+		for (uint i = 0; i < NodeCount; ++i)
+			{
+			uint NodeIndex = Nodes[i];
+			if (T.IsLeaf(NodeIndex))
+				{
+				double Dist = T.GetRootDist(NodeIndex);
+				const char *Label = T.GetLabel(NodeIndex).c_str();
+				Pf(f, "%.4g\t%s\n", Dist, Label);
+				}
+			}
 		}
 	CloseStdioFile(f);
 	}

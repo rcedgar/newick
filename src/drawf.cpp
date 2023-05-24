@@ -4,6 +4,10 @@
 #include "featuretable.h"
 #include "svg.h"
 
+void ColorsFromFile(const string &FileName,
+  vector<string> &Values, vector<string> &Colors);
+void SetFeatureTable2(const Tree2 &T2, FeatureTable &FT);
+
 void Layout::GetColor(uint Node, string &Color) const
 	{
 	Color = "black";
@@ -125,26 +129,6 @@ void Layout::SetColors(const string &DefaultColor,
 	m_ValueToColor = ValueToColor;
 	}
 
-void ColorsFromFile(const string &FileName,
-  vector<string> &Values, vector<string> &Colors)
-	{
-	Values.clear();
-	Colors.clear();
-	FILE *f = OpenStdioFile(FileName);
-	string Line;
-	vector<string> Fields;
-	while (ReadLineStdioFile(f, Line))
-		{
-		Split(Line, Fields, '\t');
-		asserta(SIZE(Fields) == 2);
-		const string &Value = Fields[0];
-		const string &Color = Fields[1];
-		Values.push_back(Value);
-		Colors.push_back(Color);
-		}
-	CloseStdioFile(f);
-	}
-
 void Layout::RenderLegend(const string &SvgFileName) const
 	{
 	Svg S;
@@ -208,12 +192,15 @@ void cmd_drawf()
 			}
 		}
 
-	uint StrokeWidth = 1;
-	if (optset_strokewidth)
-		StrokeWidth = opt(strokewidth);
+	//uint StrokeWidth = 1;
+	//if (optset_strokewidth)
+	//	StrokeWidth = opt(strokewidth);
 
 	FeatureTable FT;
-	FT.FromFile(opt(features));
+	if (optset_features)
+		FT.FromFile(opt(features));
+	else
+		SetFeatureTable2(T, FT);
 
 	string DefaultColor = "gray";
 	if (optset_default_color)
@@ -239,16 +226,12 @@ void cmd_drawf()
 	Layout Lay;
 	Lay.m_OffsetX = OffsetX;
 	Lay.m_OffsetY = OffsetY;
-	if (optset_tree_width)
-		Lay.m_Width = opt(tree_width);
-	if (optset_tree_height)
-		Lay.m_Height = opt(tree_height);
 	Lay.m_Title = Title;
 	Lay.m_TitleFontSize = TitleFontSize;
 	Lay.Run(T);
 	Lay.SetFeatures(FT);
 	Lay.SetColors(DefaultColor, ValueToColor);
-	Lay.m_StrokeWidth = StrokeWidth;
+	//Lay.m_StrokeWidth = StrokeWidth;
 	Lay.Render(opt(svg));
 	if (optset_legend)
 		Lay.RenderLegend(opt(legend));

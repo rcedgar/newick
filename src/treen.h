@@ -43,8 +43,11 @@ public:
 	void FromTokens(const vector<string> &Tokens);
 	void FromNewickFile(const string &FileName);
 	void FromNewickTree(const NewickTree &NP);
+	void FromNewickStr(const string &NewickStr);
 	void FromTree2(const Tree2 &T2);
 	void CopyNormalized(TreeN &T) const;
+	void CreateSingleton();
+	void FromSubtree(const TreeN &T, uint Node);
 
 	void ToNewickStr(string &s, bool WithLineBreaks) const;
 	void ToTree2(Tree2 &T2) const;
@@ -54,6 +57,7 @@ public:
 
 	uint GetLeafCount() const;
 	void GetLeafLabels(vector<string> &Labels, bool ErrorIfEmpty) const;
+	void GetLeafLabelSet(set<string> &Labels, bool ErrorIfEmpty, bool ErrorIfDupe) const;
 	bool IsRoot(uint Node) const { return Node == m_Root; }
 	uint GetRoot() const { return m_Root; }
 	bool IsBinary(bool &Rooted) const;
@@ -80,19 +84,26 @@ public:
 	const vector<uint> &GetChildren(uint Node) const;
 	vector<uint> &GetChildren(uint Node);
 	void DeleteLeaf(uint Node);
+	void DeleteNode(uint Node, bool DoSD = true);
+	void DeleteSubtree(uint Node);
+	void GetBootstraps(vector<double> &Bootstraps) const;
 	void CollapseConfidenceUnary();
 	void CollapseUnary();
-	void CollapseNode(uint Node);
+	void FixEmptyLeafLabels();
+	void CollapseNode(uint Node, bool DoSD = true);
 	uint GetChildCount(uint Node) const;
 	uint GetChild(uint Node, uint ChildIndex) const;
 	void UpdateParent(uint Node, uint Parent);
 	void UpdateLength(uint Node, double Length);
 	void UpdateLabel(uint Node, const string &Label);
+	void AppendSubtreeNodes(uint Node, vector<uint> &Nodes) const;
 	void AppendSubtreeLeafNodes(uint Node, vector<uint> &LeafNodes) const;
 	void AppendSubtreeLeafNodes(uint Node, set<uint> &LeafNodes) const;
 	void GetConcatLeafLabel(uint Node, string &ConcatLabel) const;
 	uint GetSubtreeLeafCount(uint Node) const;
+	void GetSubtreeLeafCounts(vector<uint> &Counts) const;
 	void Reroot(uint Node);
+	void ForceBinaryRoot();
 	void InsertRootAbove(uint InsertNode, const string &OldRootLabel,
 	  const string &NewRootLabel);
 	uint IsNode(uint Node) const;
@@ -107,6 +118,7 @@ public:
 	  set<uint> &GroupLeafNodes) const;
 	void GetGroupLeafNodes(const string &GroupName,
 	  set<uint> &GroupLeafNodes) const;
+	void Subset(const set<string> &Labels);
 	void Subset(const set<uint> &SubsetNodes);
 	void Ladderize(bool MoreRight);
 	void SortNodesBySubtreeSize(vector<uint> &Nodes, bool Increasing) const;
@@ -114,6 +126,8 @@ public:
 	bool IsNormalized() const;
 	void GetSortedLeafLabels(vector<string> &Labels) const;
 	void GetSubtreeSortedLeafLabels(uint Node, vector<string> &Labels) const;
+	void GetSubtreeLeafNodes(uint Node, vector<uint> &LeafNodes) const;
+	void GetSubtreeNodes(uint Node, vector<uint> &Nodes) const;
 	void GetSortedLeafLabelToIndex(map<string, uint> &Map) const;
 	uint GetPathToRootLength(uint Node) const;
 	double GetRootDist(uint Node) const;
@@ -122,6 +136,11 @@ public:
 	uint GetNodeCountToFurthestLeaf(uint Node) const;
 	void SetDerived();
 	void EraseNode(uint Node);
+	void GetPureSubtrees(const set<string> &LabelSet,
+	  vector<uint> &Nodes) const;
+	uint GetSibling(uint Node) const;
+	uint InsertNode(uint ParentNode, const string &Label, double Length);
+	uint InsertNewRootAboveRoot(const string &Label, double Length);
 
 private:
 	void AppendNodeToNewickStr(string &Str, uint Node, bool WithLineBreaks) const;

@@ -37,6 +37,17 @@ int main(int argc, char **argv)
 	SetLogFileName(opt(log));
 	LogProgramInfoAndCmdLine();
 
+	extern vector<string> g_Argv;
+	uint n = SIZE(g_Argv);
+	asserta(n > 0);
+	string ShortCmdLine = g_Argv[1];
+	if (n > 2)
+		ShortCmdLine += " " + g_Argv[2];
+
+	ProgressPrefix(false);
+	Progress("[%s]\n", ShortCmdLine.c_str() + 1);
+	ProgressPrefix(true);
+
 	CMD Cmd = GetCmd();
 	switch (Cmd)
 		{

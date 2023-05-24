@@ -38,7 +38,7 @@ uint TreeN::GetBestFitSubtree2(const set<uint> &AllGroupLeafNodes,
 	const uint AllGroupSize = SIZE(AllGroupLeafNodes);
 	
 	asserta(InGroupSize > 0);
-	asserta(InGroupSize < AllGroupSize);
+	asserta(InGroupSize <= AllGroupSize);
 	for (set<uint>::const_iterator p = InGroupLeafNodes.begin();
 	  p != InGroupLeafNodes.end(); ++p)
 		{
@@ -54,9 +54,12 @@ uint TreeN::GetBestFitSubtree2(const set<uint> &AllGroupLeafNodes,
 		}
 
 	uint OutgroupSize = AllGroupSize - InGroupSize;
+	if (OutgroupSize == 0)
+		return m_Root;
 	asserta(OutgroupSize > 0);
 
-	uint MinErrs = UINT_MAX;
+	const uint MinFNs = InGroupSize/2;
+	uint MinErrs = 2*InGroupSize;
 	uint BestFitNode = UINT_MAX;
 	Invert = false;
 	uint NodeCount = GetNodeCount();
@@ -91,7 +94,7 @@ uint TreeN::GetBestFitSubtree2(const set<uint> &AllGroupLeafNodes,
 		uint SubtreeFNs = InGroupSize - SubtreeInGroupCount;
 		uint SubtreeFPs = SubtreeOtherCount;
 		uint SubtreeErrs = SubtreeFPs + SubtreeFNs;
-		if (SubtreeErrs < MinErrs)
+		if (SubtreeFNs <= MinFNs && SubtreeErrs < MinErrs)
 			{
 			Invert = false;
 			MinErrs = SubtreeErrs;
@@ -118,7 +121,7 @@ uint TreeN::GetBestFitSubtree2(const set<uint> &AllGroupLeafNodes,
 			uint InvertFNs = InGroupSize - InvertInGroupCount;
 			uint InvertFPs = InvertOtherCount;
 			uint InvertErrs = InvertFPs + InvertFNs;
-			if (InvertErrs < MinErrs)
+			if (InvertFNs <= MinFNs && InvertErrs < MinErrs)
 				{
 				Invert = true;
 				MinErrs = InvertErrs;
@@ -128,13 +131,15 @@ uint TreeN::GetBestFitSubtree2(const set<uint> &AllGroupLeafNodes,
 				}
 			}
 		}
-	asserta(BestFitNode != UINT_MAX);
+	//asserta(BestFitNode != UINT_MAX);
 	return BestFitNode;
 	}
 
 void cmd_rootbyoutgroup()
 	{
 	const string &InputFileName = opt(rootbyoutgroup);
+	const string &TsvFileName = opt(tsvout);
+	FILE *fTsv = CreateStdioFile(TsvFileName);
 
 	vector<TreeN *> Trees;
 	TreesFromFile(InputFileName, Trees);
@@ -154,7 +159,7 @@ void cmd_rootbyoutgroup()
 			GroupLabels.insert(GroupLabelsVec[i]);
 		}
 	else if (optset_outgroup)
-		GroupName = opt(outgroup);
+		GroupName = opt(outgroup); // substring matching
 	else
 		Die("Must specify -labels or -outgroup");
 
@@ -177,27 +182,58 @@ void cmd_rootbyoutgroup()
 		if (GroupLeafNodes.empty())
 			Die("Outgroup not found");
 
-		uint FPs;
-		uint FNs;
-		bool Invert;
+		uint FPs = UINT_MAX;
+		uint FNs = UINT_MAX;
+		bool Invert = false;
+		bool FitOk = false;
 		uint LCA = T.GetBestFitSubtree1(GroupLeafNodes, true, FPs, FNs, Invert);
-		asserta(LCA != UINT_MAX);
-		const string &LCALabel = T.GetLabel(LCA);
-
-		Log("@root ");
-		ProgressLog("lca=%u lcalabel=%s FPs=%u FNs=%u invert=%c\n",
-		  LCA, LCALabel.c_str(), FPs, FNs, tof(Invert));
-
-		if (NewRootLabel == "=")
+		if (LCA == UINT_MAX)
 			{
-			uint OldRoot = T.GetRoot();
-			const string &OldLab = T.GetLabel(OldRoot);
-			T.InsertRootAbove(LCA, OldRootLabel, OldLab);
+			Warning("No fit found to outgroup, using existing root");
+			T.ForceBinaryRoot();
 			}
 		else
-			T.InsertRootAbove(LCA, OldRootLabel, NewRootLabel);
+			{
+			FitOk = true;
+			const string &LCALabel = T.GetLabel(LCA);
+
+			Log("@root ");
+			ProgressLog("lca=%u lcalabel=%s FPs=%u FNs=%u invert=%c\n",
+			  LCA, LCALabel.c_str(), FPs, FNs, tof(Invert));
+
+			if (NewRootLabel == "=")
+				{
+				uint OldRoot = T.GetRoot();
+				const string &OldLab = T.GetLabel(OldRoot);
+				T.InsertRootAbove(LCA, OldRootLabel, OldLab);
+				}
+			else
+				T.InsertRootAbove(LCA, OldRootLabel, NewRootLabel);
+			}
+
+		if (fTsv != 0)
+			{
+			string RootLabel;
+			T.GetLabel(T.m_Root, RootLabel);
+			if (RootLabel == "")
+				RootLabel = ".";
+			uint Size = SIZE(GroupLeafNodes);
+			uint LeafCount = T.GetLeafCount();
+
+			fprintf(fTsv, "file=%s", InputFileName.c_str());
+			fprintf(fTsv, "\ttree=%u", TreeIndex);
+			fprintf(fTsv, "\ttreesize=%u", LeafCount);
+			fprintf(fTsv, "\trootlabel=%s", RootLabel.c_str());
+			fprintf(fTsv, "\tgroupsize=%u", Size);
+			fprintf(fTsv, "\tFPs=%u", FPs);
+			fprintf(fTsv, "\tFNs=%u", FNs);
+			fprintf(fTsv, "\tfitok=%c", tof(FitOk));
+			fprintf(fTsv, "\n");
+			}
+
 		T.Ladderize(opt(right));
 		}
 
 	TreesToFile(Trees, opt(output));
+	CloseStdioFile(fTsv);
 	}

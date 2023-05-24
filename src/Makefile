@@ -1,294 +1,157 @@
-CPP = ccache g++
-CPPOPTS = -fopenmp -ffast-math -msse -mfpmath=sse -O3 -DNDEBUG -c
+BINDIR := ../bin
+OBJDIR := o
+BINPATH := $(BINDIR)/newick
 
-CC = ccache gcc
-CCOPTS = -fopenmp -ffast-math -msse -mfpmath=sse -O3 -DNDEBUG -c
+CPPFLAGS := $(CPPFLAGS) -DNDEBUG -pthread
 
-LNK = g++
-LNKOPTS = -O3 -fopenmp -pthread -lpthread -static
+CXX = g++
+CXXFLAGS := $(CXXFLAGS) -O3 -fopenmp -ffast-math -msse -mfpmath=sse
+
+UNAME_S := $(shell uname -s)
+LDFLAGS := $(LDFLAGS) -O3 -fopenmp -pthread -lpthread
+ifeq ($(UNAME_S),Linux)
+    LDFLAGS += -static
+endif
 
 HDRS = \
-  biffer2.h \
   biparter.h \
+  biparterx.h \
   clustermaker.h \
   cmds.h \
+  consmaker.h \
+  consmakerx.h \
+  consorder.h \
   countsort.h \
+  divconker.h \
   featuretable.h \
+  gobuff.h \
   layout.h \
   murmur.h \
   myopts.h \
   myutils.h \
+  newick_token.h \
   newicklexer.h \
   newickparser2.h \
   newicktree.h \
-  newick_token.h \
   quarts.h \
-  rofo2.h \
   sort.h \
   splitter.h \
+  supermaker.h \
   svg.h \
+  taxer.h \
   tree2.h \
   treen.h \
+  treex.h \
   usage.h \
-  ver_counter.h \
 
 OBJS = \
-  o/cladeq.o \
-  o/conf2.o \
-  o/confcmps.o \
-  o/correl2.o \
-  o/getlcas.o \
-  o/lcalabel.o \
-  o/mono.o \
-  o/rootbyoutgroup.o \
-  o/bootq.o \
-  o/cladogram.o \
-  o/cluster2.o \
-  o/clustermaker.o \
-  o/collapse.o \
-  o/condense.o \
-  o/conf.o \
-  o/deleteleaves.o \
-  o/diameter.o \
-  o/drawfs.o \
-  o/featuretable.o \
-  o/fixft.o \
-  o/getlabels.o \
-  o/intlabel.o \
-  o/ladderize.o \
-  o/draw.o \
-  o/drawf.o \
-  o/layout.o \
-  o/murmurhash.o \
-  o/myutils.o \
-  o/newicklexer.o \
-  o/newickparser2.o \
-  o/newicktree.o \
-  o/newick_main.o \
-  o/newick_token.o \
-  o/biparter.o \
-  o/quarts.o \
-  o/randtree.o \
-  o/relabel.o \
-  o/relabelacc.o \
-  o/relabelf.o \
-  o/relabeln.o \
-  o/reroot.o \
-  o/rofo3.o \
-  o/rofos.o \
-  o/rootbyhalves.o \
-  o/rotate.o \
-  o/taxq2.o \
-  o/taxtable.o \
-  o/topo.o \
-  o/split.o \
-  o/stringsfromfile.o \
-  o/subset.o \
-  o/subsetnodes.o \
-  o/subtree.o \
-  o/svg.o \
-  o/syncft.o \
-  o/syncftacc.o \
-  o/stats.o \
-  o/taxq.o \
-  o/tree2.o \
-  o/treen.o \
-  o/treesfromdata.o \
-  o/tsv.o \
-  o/usage.o \
+  $(OBJDIR)/addrootlabel.o \
+  $(OBJDIR)/bestfitsubtree.o \
+  $(OBJDIR)/biparterx.o \
+  $(OBJDIR)/cladeq.o \
+  $(OBJDIR)/colors.o \
+  $(OBJDIR)/condensex.o \
+  $(OBJDIR)/conf2.o \
+  $(OBJDIR)/confcmps.o \
+  $(OBJDIR)/consensus.o \
+  $(OBJDIR)/consensusx.o \
+  $(OBJDIR)/consmaker.o \
+  $(OBJDIR)/consmakerx.o \
+  $(OBJDIR)/consorder.o \
+  $(OBJDIR)/correl2.o \
+  $(OBJDIR)/deletegroup.o \
+  $(OBJDIR)/deleteoutgroup.o \
+  $(OBJDIR)/divconker.o \
+  $(OBJDIR)/olcs.o \
+  $(OBJDIR)/dq.o \
+  $(OBJDIR)/featuretablefromtree.o \
+  $(OBJDIR)/findgroups.o \
+  $(OBJDIR)/getcc.o \
+  $(OBJDIR)/getlcas.o \
+  $(OBJDIR)/getlcasx.o \
+  $(OBJDIR)/lcalabel.o \
+  $(OBJDIR)/mono.o \
+  $(OBJDIR)/rootbyoutgroup.o \
+  $(OBJDIR)/bootq.o \
+  $(OBJDIR)/cladogram.o \
+  $(OBJDIR)/cluster2.o \
+  $(OBJDIR)/clustermaker.o \
+  $(OBJDIR)/collapse.o \
+  $(OBJDIR)/condense.o \
+  $(OBJDIR)/conf.o \
+  $(OBJDIR)/deleteleaves.o \
+  $(OBJDIR)/diameter.o \
+  $(OBJDIR)/drawfs.o \
+  $(OBJDIR)/featuretable.o \
+  $(OBJDIR)/fixft.o \
+  $(OBJDIR)/getlabels.o \
+  $(OBJDIR)/intlabel.o \
+  $(OBJDIR)/ladderize.o \
+  $(OBJDIR)/draw.o \
+  $(OBJDIR)/drawf.o \
+  $(OBJDIR)/layout.o \
+  $(OBJDIR)/murmurhash.o \
+  $(OBJDIR)/myutils.o \
+  $(OBJDIR)/newicklexer.o \
+  $(OBJDIR)/newickparser2.o \
+  $(OBJDIR)/newicktree.o \
+  $(OBJDIR)/newick_main.o \
+  $(OBJDIR)/newick_token.o \
+  $(OBJDIR)/biparter.o \
+  $(OBJDIR)/quarts.o \
+  $(OBJDIR)/randtree.o \
+  $(OBJDIR)/relabel.o \
+  $(OBJDIR)/relabelacc.o \
+  $(OBJDIR)/relabelf.o \
+  $(OBJDIR)/relabeln.o \
+  $(OBJDIR)/reroot.o \
+  $(OBJDIR)/rofo3.o \
+  $(OBJDIR)/rofos.o \
+  $(OBJDIR)/rootbyhalves.o \
+  $(OBJDIR)/rootbyoutgroupx.o \
+  $(OBJDIR)/rotate.o \
+  $(OBJDIR)/shrink.o \
+  $(OBJDIR)/supercluster.o \
+  $(OBJDIR)/supermaker.o \
+  $(OBJDIR)/tax.o \
+  $(OBJDIR)/taxer.o \
+  $(OBJDIR)/taxq2.o \
+  $(OBJDIR)/taxqx.o \
+  $(OBJDIR)/taxtable.o \
+  $(OBJDIR)/testdeletesubtree.o \
+  $(OBJDIR)/testx.o \
+  $(OBJDIR)/topo.o \
+  $(OBJDIR)/split.o \
+  $(OBJDIR)/stringsfromfile.o \
+  $(OBJDIR)/subset.o \
+  $(OBJDIR)/subsetnodes.o \
+  $(OBJDIR)/subtree.o \
+  $(OBJDIR)/svg.o \
+  $(OBJDIR)/syncft.o \
+  $(OBJDIR)/syncftacc.o \
+  $(OBJDIR)/stats.o \
+  $(OBJDIR)/taxq.o \
+  $(OBJDIR)/tree2.o \
+  $(OBJDIR)/treen.o \
+  $(OBJDIR)/treesfromdata.o \
+  $(OBJDIR)/treex.o \
+  $(OBJDIR)/tsv.o \
+  $(OBJDIR)/usage.o \
+
+.PHONY: clean
+
+$(BINPATH) : $(BINDIR)/ $(OBJDIR)/ $(OBJS)
+	$(CXX) $(LDFLAGS) $(OBJS) -o $(BINPATH)
+	strip -d $(BINPATH)
+
+$(OBJDIR)/ :
+	mkdir -p $(OBJDIR)/
 
-newick : o/ $(OBJS)
-	$(LNK) $(LNKOPTS) $(OBJS) -o o/newick
-	strip -d o/newick
+$(BINDIR)/ :
+	mkdir -p $(BINDIR)/
 
-o/ :
-	mkdir -p o/
+$(OBJDIR)/%.o : %.cpp $(HDRS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
 
-o/cladeq.o : cladeq.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/cladeq.o cladeq.cpp
-
-o/conf2.o : conf2.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/conf2.o conf2.cpp
-
-o/confcmps.o : confcmps.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/confcmps.o confcmps.cpp
-
-o/correl2.o : correl2.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/correl2.o correl2.cpp
-
-o/getlcas.o : getlcas.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/getlcas.o getlcas.cpp
-
-o/lcalabel.o : lcalabel.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/lcalabel.o lcalabel.cpp
-
-o/mono.o : mono.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/mono.o mono.cpp
-
-o/rootbyoutgroup.o : rootbyoutgroup.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/rootbyoutgroup.o rootbyoutgroup.cpp
-
-o/bootq.o : bootq.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/bootq.o bootq.cpp
-
-o/cladogram.o : cladogram.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/cladogram.o cladogram.cpp
-
-o/cluster2.o : cluster2.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/cluster2.o cluster2.cpp
-
-o/clustermaker.o : clustermaker.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/clustermaker.o clustermaker.cpp
-
-o/collapse.o : collapse.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/collapse.o collapse.cpp
-
-o/condense.o : condense.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/condense.o condense.cpp
-
-o/conf.o : conf.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/conf.o conf.cpp
-
-o/deleteleaves.o : deleteleaves.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/deleteleaves.o deleteleaves.cpp
-
-o/diameter.o : diameter.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/diameter.o diameter.cpp
-
-o/drawfs.o : drawfs.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/drawfs.o drawfs.cpp
-
-o/featuretable.o : featuretable.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/featuretable.o featuretable.cpp
-
-o/fixft.o : fixft.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/fixft.o fixft.cpp
-
-o/getlabels.o : getlabels.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/getlabels.o getlabels.cpp
-
-o/intlabel.o : intlabel.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/intlabel.o intlabel.cpp
-
-o/ladderize.o : ladderize.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/ladderize.o ladderize.cpp
-
-o/draw.o : draw.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/draw.o draw.cpp
-
-o/drawf.o : drawf.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/drawf.o drawf.cpp
-
-o/layout.o : layout.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/layout.o layout.cpp
-
-o/murmurhash.o : murmurhash.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/murmurhash.o murmurhash.cpp
-
-o/myutils.o : myutils.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/myutils.o myutils.cpp
-
-o/newicklexer.o : newicklexer.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/newicklexer.o newicklexer.cpp
-
-o/newickparser2.o : newickparser2.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/newickparser2.o newickparser2.cpp
-
-o/newicktree.o : newicktree.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/newicktree.o newicktree.cpp
-
-o/newick_main.o : newick_main.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/newick_main.o newick_main.cpp
-
-o/newick_token.o : newick_token.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/newick_token.o newick_token.cpp
-
-o/biparter.o : biparter.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/biparter.o biparter.cpp
-
-o/quarts.o : quarts.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/quarts.o quarts.cpp
-
-o/randtree.o : randtree.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/randtree.o randtree.cpp
-
-o/relabel.o : relabel.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/relabel.o relabel.cpp
-
-o/relabelacc.o : relabelacc.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/relabelacc.o relabelacc.cpp
-
-o/relabelf.o : relabelf.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/relabelf.o relabelf.cpp
-
-o/relabeln.o : relabeln.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/relabeln.o relabeln.cpp
-
-o/reroot.o : reroot.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/reroot.o reroot.cpp
-
-o/rofo3.o : rofo3.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/rofo3.o rofo3.cpp
-
-o/rofos.o : rofos.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/rofos.o rofos.cpp
-
-o/rootbyhalves.o : rootbyhalves.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/rootbyhalves.o rootbyhalves.cpp
-
-o/rotate.o : rotate.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/rotate.o rotate.cpp
-
-o/taxq2.o : taxq2.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/taxq2.o taxq2.cpp
-
-o/taxtable.o : taxtable.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/taxtable.o taxtable.cpp
-
-o/topo.o : topo.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/topo.o topo.cpp
-
-o/split.o : split.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/split.o split.cpp
-
-o/stringsfromfile.o : stringsfromfile.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/stringsfromfile.o stringsfromfile.cpp
-
-o/subset.o : subset.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/subset.o subset.cpp
-
-o/subsetnodes.o : subsetnodes.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/subsetnodes.o subsetnodes.cpp
-
-o/subtree.o : subtree.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/subtree.o subtree.cpp
-
-o/svg.o : svg.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/svg.o svg.cpp
-
-o/syncft.o : syncft.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/syncft.o syncft.cpp
-
-o/syncftacc.o : syncftacc.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/syncftacc.o syncftacc.cpp
-
-o/stats.o : stats.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/stats.o stats.cpp
-
-o/taxq.o : taxq.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/taxq.o taxq.cpp
-
-o/tree2.o : tree2.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/tree2.o tree2.cpp
-
-o/treen.o : treen.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/treen.o treen.cpp
-
-o/treesfromdata.o : treesfromdata.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/treesfromdata.o treesfromdata.cpp
-
-o/tsv.o : tsv.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/tsv.o tsv.cpp
-
-o/usage.o : usage.cpp $(HDRS)
-	$(CPP) $(CPPOPTS) -o o/usage.o usage.cpp
+clean:
+	rm -rf $(OBJDIR)/ $(BINPATH)

@@ -6,30 +6,6 @@ void GetFractConfs(const TreeN &T, vector<double> &Confs);
 void ReadTaxTable(const string &FileName, const vector<string> &Ranks,
   vector<FeatureTable *> &FTs);
 
-void SetFeatureTable(const TreeN &T, FeatureTable &FT)
-	{
-	if (optset_ff)
-		{
-		const string &FF = opt(ff);
-		if (SIZE(FF) != 2 || !isdigit(FF[1]))
-			Die("Invalid ff");
-
-		char Sep = FF[0];
-		char Digit = FF[1];
-		if (Digit == '0')
-			Die("Invalid ff (field must be >0)");
-		uint FieldIndex = uint(Digit - '0') - 1;
-		FT.FromTree(T, Sep, FieldIndex);
-		}
-	else if (optset_features)
-		{
-		FT.FromFile(opt(features));
-		FT.SetLeafNodeSet(T);
-		}
-	else
-		Die("Must set -ff or -features");
-	}
-
 static bool IsConflict(uint GroupInSubtree, uint GroupSize, uint SubtreeSize)
 	{
 	if (GroupInSubtree == 0)

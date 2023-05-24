@@ -1,6 +1,7 @@
 #include "myutils.h"
 #include "featuretable.h"
 #include "treen.h"
+#include "treex.h"
 #include <set>
 
 void GetAccFromLabel(const string &Label, string &Acc)
@@ -40,7 +41,24 @@ void FeatureTable::GetLabels_ByValueIndex(uint ValueIndex, vector<string> &Label
 		if (m_LabelIndexToValueIndex[LabelIndex] == ValueIndex)
 			{
 			const string &Label = m_Labels[LabelIndex];
-			Labels.push_back(Label);
+			if (Label != "")
+				Labels.push_back(Label);
+			}
+		}
+	}
+
+void FeatureTable::GetLabels_ByValueIndex(uint ValueIndex, set<string> &Labels) const
+	{
+	Labels.clear();
+	const uint LabelCount = GetLabelCount();
+	asserta(SIZE(m_LabelIndexToValueIndex) == LabelCount);
+	for (uint LabelIndex = 0; LabelIndex < LabelCount; ++LabelIndex)
+		{
+		if (m_LabelIndexToValueIndex[LabelIndex] == ValueIndex)
+			{
+			const string &Label = m_Labels[LabelIndex];
+			if (Label != "")
+				Labels.insert(Label);
 			}
 		}
 	}
@@ -233,5 +251,115 @@ void FeatureTable::SetLeafNodeSet(const TreeN &T)
 		uint ValueIndex = GetValueIndex_ByLabel(IndexedLabel);
 		if (ValueIndex != UINT_MAX)
 			m_LeafNodeSet.insert(Node);
+		}
+	}
+
+void FeatureTable::SetLeafNodeSet(const TreeX &T)
+	{
+	const uint NodeCount = T.m_AssignedNodeCount;
+	for (uint Node = 0; Node < NodeCount; ++Node)
+		{
+		if (!T.IsNode(Node))
+			continue;
+		if (!T.IsLeaf(Node))
+			continue;
+		const string &FullLabel = T.GetLabel(Node);
+		if (FullLabel.empty())
+			continue;
+		string IndexedLabel;
+		if (opt(accs))
+			{
+			string Acc;
+			GetAccFromLabel(FullLabel, Acc);
+			IndexedLabel = Acc;
+			}
+		else
+			IndexedLabel = FullLabel;
+
+		uint ValueIndex = GetValueIndex_ByLabel(IndexedLabel);
+		if (ValueIndex != UINT_MAX)
+			m_LeafNodeSet.insert(Node);
+		}
+	}
+
+void FeatureTable::FromTree(const TreeX &T, char Sep, uint FieldIndex)
+	{
+	Clear();
+
+	for (uint Node = 0; Node < T.m_AssignedNodeCount; ++Node)
+		{
+		if (!T.IsNode(Node))
+			continue;
+		if (!T.IsLeaf(Node))
+			continue;
+		const string &FullLabel = T.GetLabel(Node);
+		if (FullLabel.empty())
+			continue;
+
+		string Acc;
+		if (opt(accs))
+			GetAccFromLabel(FullLabel, Acc);
+
+		const string &IndexedLabel = (opt(accs) ? Acc : FullLabel);
+
+		if (m_LabelToIndex.find(IndexedLabel) != m_LabelToIndex.end())
+			Die("Dupe label >%s", IndexedLabel.c_str());
+		uint LabelIndex = SIZE(m_Labels);
+		m_Labels.push_back(IndexedLabel);
+		m_LabelToIndex[IndexedLabel] = LabelIndex;
+
+		vector<string> Fields;
+		Split(FullLabel, Fields, Sep);
+		if (SIZE(Fields) <= FieldIndex)
+			continue;
+
+		const string &Value = Fields[FieldIndex];
+		if (Value.empty() || Value == m_NA)
+			continue;
+
+		if (m_ValueToIndex.find(Value) == m_ValueToIndex.end())
+			{
+			uint ValueIndex = SIZE(m_Values);
+			m_Values.push_back(Value);
+			m_ValueToIndex[Value] = ValueIndex;
+			}
+		}
+
+	const uint LabelCount = SIZE(m_Labels);
+	m_LabelIndexToValueIndex.resize(LabelCount, UINT_MAX);
+
+	for (uint Node = 0; Node < T.m_AssignedNodeCount; ++Node)
+		{
+		if (!T.IsNode(Node))
+			continue;
+		if (!T.IsLeaf(Node))
+			continue;
+		const string &FullLabel = T.GetLabel(Node);
+		if (FullLabel.empty())
+			continue;
+		string IndexedLabel;
+		if (opt(accs))
+			{
+			string Acc;
+			GetAccFromLabel(FullLabel, Acc);
+			IndexedLabel = Acc;
+			}
+		else
+			IndexedLabel = FullLabel;
+		vector<string> Fields;
+		Split(FullLabel, Fields, Sep);
+		if (SIZE(Fields) <= FieldIndex)
+			continue;
+		const string &Value = Fields[FieldIndex];
+		if (Value.empty() || Value == m_NA)
+			continue;
+
+		uint LabelIndex = m_LabelToIndex[IndexedLabel];
+		asserta(m_LabelToIndex.find(IndexedLabel) != m_LabelToIndex.end());
+
+		asserta(m_ValueToIndex.find(Value) != m_ValueToIndex.end());
+		uint ValueIndex = m_ValueToIndex[Value];
+		m_LabelIndexToValueIndex[LabelIndex] = ValueIndex;
+		m_LeafNodeSet.insert(Node);
 		}
 	}
