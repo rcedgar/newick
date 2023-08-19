@@ -1,5 +1,5 @@
 #include "myutils.h"
-#include "treeN.h"
+#include "treen.h"
 
 void GetAccFromLabel(const string &Label, string &Acc);
 
