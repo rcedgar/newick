@@ -15,7 +15,7 @@
 "    newick -rofos trees.newick -log rofos.log\n"
 "\n"
 "Re-label trees, labels.tsv tab-separated with #1=old_label #2=new_label:\n"
-"    newick -relabel trees.newick -labels labels.tsv -output relabeled_trees.newick\n"
+"    newick -relabel trees.newick -labels2 labels.tsv -output relabeled_trees.newick\n"
 "\n"
 "Add integer node number labels to internal nodes:\n"
 "    newick -intlabel tree.newick -output intlabel.newick\n"
