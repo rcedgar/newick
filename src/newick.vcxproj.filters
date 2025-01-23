@@ -382,5 +382,8 @@
     <ClCompile Include="olcs.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="getlcasubtrees.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

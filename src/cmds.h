@@ -71,5 +71,6 @@ A(testx)
 A(dq)
 A(olcs)
 A(testdeletesubtree)
+A(getlcasubtrees)
 
 #undef A

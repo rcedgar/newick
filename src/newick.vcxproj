@@ -69,6 +69,7 @@
     <ClCompile Include="deletegroup.cpp" />
     <ClCompile Include="deleteoutgroup.cpp" />
     <ClCompile Include="divconker.cpp" />
+    <ClCompile Include="getlcasubtrees.cpp" />
     <ClCompile Include="olcs.cpp" />
     <ClCompile Include="dq.cpp" />
     <ClCompile Include="featuretablefromtree.cpp" />

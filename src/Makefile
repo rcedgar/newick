@@ -62,6 +62,7 @@ OBJS = \
   $(OBJDIR)/deletegroup.o \
   $(OBJDIR)/deleteoutgroup.o \
   $(OBJDIR)/divconker.o \
+  $(OBJDIR)/getlcasubtrees.o \
   $(OBJDIR)/olcs.o \
   $(OBJDIR)/dq.o \
   $(OBJDIR)/featuretablefromtree.o \

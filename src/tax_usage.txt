@@ -1,0 +1,40 @@
+newick 
+	-tax trees.newick \				# INPUT one or more rooted binary trees, suggest just one to KISS
+	-features feature_table.tsv \	# INPUT feature table (see below)
+	-tsv results.tsv \				# OUTPUT results in tab-separated text format
+	-fev results.fev \				# OUTPUT results in "field=value" format
+	-out annotated.newick \			# OUTPUT annotated tree -- I forget what this is :-)
+
+All OUTPUT options are optional :-)
+
+Each taxon is matched to the tree by finding a best-fit LCA
+  node which minimizes FP+FN errors.
+	FP = leaf in LCA's subtree belongs to a different taxon.
+	FN = species in the taxon not in the LCA's subtree.
+
+Output files report TPs and FPs for each taxon, and summary for the whole tree
+
+Feature table:
+Specifies taxon for each leaf label in the tree.
+Format is tab-separated text with two fields:
+	1. leaf_label, 2. taxon
+
+Putting taxon names in labels:
+It can be nice to put taxon names in the tree label, e.g. A1234_Pisuviricota,
+where A1234 = Genbank ID and Pisuviricota = taxon. Then you can  quickly
+visualize in a tree viewer such as Dendroscope to see whether taxa are
+grouping together. If you do this, then you don't need to give a feature
+table, instead you tell newick where the taxon name is by using the -ff
+option. This has two characters: 1. integer field number, 2. separator
+character. For labels formatted like A1234_Pisuviricota, you would
+use -ff 2_ (second field, fields separated by underscore).
+
+All of this is for a single rank e.g. phylum or family. Typically, one
+rank is the "sweet spot" -- lower ranks are too easy, higher ranks are
+too hard. To measure multiple ranks, you will need different feature
+tables.
+
+You need a rooted tree, there is a -rootbyoutgroup command to do rooting by taxonomic outgroup
+newick -rootbyoutgroup trees.newick -output rooted.newick
+If the outgroup is a single leaf, you can specify it by -label outgroupname
+If the group is one or more leaves, specify by -labels outgrouplabels.txt
