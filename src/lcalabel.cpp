@@ -54,6 +54,8 @@ void cmd_lcalabel()
 		{
 		const string &Value = Values[i];
 		uint LCA = LCAs[i];
+		if (LCA == UINT_MAX)
+			continue;
 		asserta(T.IsNode(LCA));
 		const string &Label = T.GetLabel(LCA);
 		string NewLabel;
