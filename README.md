@@ -14,7 +14,7 @@ Windows [newick.exe](https://github.com/rcedgar/newick/raw/main/binaries/newick.
 
     Make a subset tree given file with leaf labels, one per line (labels
     do not need to be a subtree, the tree is collapsed as needed):
-        newick -input tree.newick -labels labels.txt -output subset.newick
+        newick -subset tree.newick -labels labels.txt -output subset.newick
 
     Get leaf labels:
         newick -getlabels tree.newick -output labels.txt
