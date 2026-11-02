@@ -991,6 +991,7 @@ double GetPhysMemBytes()
 // MemTotal:       255908 kB
 	char Line[128];
 	int n = read(fd, Line, sizeof(Line));
+	close(fd);
 	if (n < 0)
 		return 0.0;
 	Line[127] = 0;
